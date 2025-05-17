@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
+from email_validator import validate_email
 
 app = FastAPI()
 
@@ -32,8 +33,10 @@ def create_application(app_data: Application):
 def list_applications(company_name: Optional[str] = None, candidate_email: Optional[str] = None):
     if company_name:
         return {"message": f"Here is your application for {company_name}"}
-    elif candidate_email:
+    elif validate_email(candidate_email):
         return {"message": f"Here is your application for {candidate_email}"}
+    elif not validate_email(candidate_email):
+        return {"message": "Invalid email address. Please enter a valid email format like name@example.com. "}
     else:
         return {"message": "Here are all of your applications", "applications": applications}
 
@@ -64,6 +67,10 @@ def patch_application(candidate_id: str, patch: ApplicationUpdate):
         if app_item.candidate_id == candidate_id:
             updates = []
             if patch.email:
+                if not validate_email(patch.email):
+                    return {
+                        "message": "Invalid email address. Please enter a valid email format like name@example.com."
+                    }
                 app_item.email = patch.email
                 updates.append(f"email updated to {patch.email}")
             if patch.job_id:
